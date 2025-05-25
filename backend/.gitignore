@@ -1,0 +1,22 @@
+# ==== CONFIG FILES! ====
+application.properties
+application-local.properties
+application.yml
+application-local.yml
+.env
+.env.*
+
+# ==== INTELLIJ, VS CODE, MAVEN ====
+.idea
+*.iws
+*.iml
+*.ipr
+.vscode/
+target/
+build/
+
+# ==== EXAMPLES FOR MONOREPO ====
+backend/application.properties
+backend/application-local.properties
+backend/.env
+frontend/.env
