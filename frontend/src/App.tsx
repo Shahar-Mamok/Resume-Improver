@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import ReactMarkdown from "react-markdown";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
-
-// 🚀 Custom Tailwind Markdown Renderer for AMAZING output!
+import rehypeRaw from "rehype-raw";
+// 🚀 Custom Tailwind Markdown Renderer for beautiful output!
 const markdownComponents = {
   table: ({ node, ...props }) => (
     <div className="overflow-x-auto my-4">
@@ -51,11 +51,11 @@ const markdownComponents = {
   ),
 };
 
-// 📝 PDF Download function - place before the component return:
+// PDF Download function – grabs the single result block!
 function downloadAsPDF() {
   const content = document.getElementById('resume-result');
   if (!content) return;
-  // מוסיפים כותרת ל־PDF זמני
+  // Add a custom PDF title/header
   const header = document.createElement('div');
   header.innerHTML = `<h2 style="color:#9333ea; text-align:center;">Resume Improver Report</h2>`;
   const clone = content.cloneNode(true);
@@ -65,15 +65,14 @@ function downloadAsPDF() {
   html2pdf().from(wrapper).save('ResumeAnalysis.pdf');
 }
 
-
-
 function App() {
+  // App state: File, job description, AI result, and loading spinner
   const [resumeFile, setResumeFile] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Send file + job description to backend
+  // Send file + job description to backend API
   const handleAnalyze = async () => {
     if (!resumeFile || !jobDescription) return;
     setLoading(true);
@@ -91,12 +90,12 @@ function App() {
       const data = await response.text();
       let niceContent = data;
 
-      // Try to unwrap if backend returns JSON
+      // Try to parse JSON if backend is returning GPT-style JSON
       try {
         const parsed = JSON.parse(data);
         niceContent = parsed.choices?.[0]?.message?.content ?? data;
       } catch (e) {
-        // Not JSON, ignore
+        // Not JSON, just plain text
       }
       setResult(response.ok ? niceContent : `Error: ${response.status} - ${niceContent}`);
     } catch (error) {
@@ -108,6 +107,7 @@ function App() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100">
       <div className="backdrop-blur-md bg-white/70 rounded-3xl shadow-2xl p-10 w-full max-w-2xl border border-white/80">
+        {/* Title & Description */}
         <h1 className="text-4xl font-extrabold mb-2 text-center text-gray-800 drop-shadow-sm tracking-tight">
           Resume Improver
         </h1>
@@ -156,17 +156,24 @@ function App() {
           {loading ? 'Analyzing...' : 'Analyze'}
         </button>
 
-        {/* Results */}
-        <div className="bg-white/95 rounded-2xl p-5 text-gray-800 text-left min-h-[80px] border-2 border-blue-200 shadow-xl transition-all duration-300 mt-2 prose prose-p:mb-2">
+        {/* Results block – this is the ONLY place it renders! */}
+        <div
+          id="resume-result"
+          className="bg-white/95 rounded-2xl p-5 text-gray-800 text-left min-h-[80px] border-2 border-blue-200 shadow-xl transition-all duration-300 mt-2 prose prose-p:mb-2"
+        >
           {result
             ? (
-              <ReactMarkdown components={markdownComponents}>
-                {result}
-              </ReactMarkdown>
+              <ReactMarkdown
+              components={markdownComponents}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {result}
+            </ReactMarkdown>
             )
             : <span className="italic text-gray-400">Analysis results will appear here (UI placeholder)</span>
           }
         </div>
+        {/* Only show copy/download if there's a result */}
         {result && (
           <div className="flex gap-3 mt-3">
             <button
@@ -178,7 +185,7 @@ function App() {
               Copy All
             </button>
             <button
-              onClick={() => downloadAsPDF(result)}
+              onClick={downloadAsPDF}
               className="py-1 px-4 rounded-lg bg-pink-500 text-white hover:bg-pink-700 font-bold transition shadow"
             >
               Download as PDF
@@ -186,20 +193,6 @@ function App() {
           </div>
         )}
       </div>
-      <div
-  id="resume-result"
-  className="bg-white/95 rounded-2xl p-5 text-gray-800 text-left min-h-[80px] border-2 border-blue-200 shadow-xl transition-all duration-300 mt-2 prose prose-p:mb-2"
->
-  {result
-    ? (
-      <ReactMarkdown components={markdownComponents}>
-        {result}
-      </ReactMarkdown>
-    )
-    : <span className="italic text-gray-400">Analysis results will appear here (UI placeholder)</span>
-  }
-</div>
-
     </div>
   );
 }
